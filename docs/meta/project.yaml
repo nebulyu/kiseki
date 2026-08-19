@@ -1,0 +1,54 @@
+schema_version: "1.0"
+
+project:
+  id: "kiseki"
+  name: "Kiseki"
+  reading: "きせき"
+  meanings:
+    - "轨迹"
+    - "奇迹"
+  tagline: "让每天的证据，显现长期的轨迹。"
+  description: "本地优先、AI 辅助的个人轨迹记录与长期选择分析系统。"
+  primary_language: "zh-CN"
+
+status:
+  lifecycle: "active"
+  phase: "phase-2-personal-trial"
+  implementation: "working-cli-mvp"
+  current_milestone: "scoring-calibration"
+  last_reviewed: "2026-08-20"
+
+product:
+  audience:
+    - "project-owner"
+  local_first: true
+  human_editable: true
+  external_model_processing: "explicitly-configured"
+  medical_or_psychological_diagnosis: false
+
+architecture:
+  style: "simple-local-cli"
+  current_interface: "cli"
+  primary_language: "Python"
+  package_manager: "uv"
+  persistence: "SQLite"
+  validation: "Pydantic"
+  model_integration: "direct-single-provider"
+  future_ui: "React-TypeScript"
+  future_desktop_shell: "Tauri"
+
+artifacts:
+  source_of_truth:
+    vision: "docs/vision.md"
+    functional_scope: "docs/functional-scope.md"
+    current_status: "docs/current-status.md"
+    architecture: "docs/architecture.md"
+    roadmap: "docs/roadmap.md"
+    decisions: "docs/meta/decisions.md"
+    glossary: "docs/meta/glossary.md"
+  templates:
+    daily_entry: "docs/templates/daily-entry.md"
+    analysis_schema: "docs/templates/analysis-result.schema.json"
+    scoring_rubric: "docs/templates/scoring-rubric.example.yaml"
+    route_definition: "docs/templates/route-definition.example.yaml"
+    analysis_prompt: "docs/templates/analysis-prompt.md"

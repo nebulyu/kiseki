@@ -1,0 +1,9 @@
+[project]
+name = "kiseki"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "openai>=3.1.0",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.3",
+]

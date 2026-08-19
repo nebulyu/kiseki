@@ -1,0 +1,40 @@
+# Python environments and generated files
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+secrets/
+credentials*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Personal journal data, exports, and backups
+data/
+private/
+exports/
+backups/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+# Local logs and tool state
+logs/
+*.log
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

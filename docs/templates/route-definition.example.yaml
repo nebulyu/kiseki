@@ -1,0 +1,46 @@
+schema_version: "0.1.0"
+id: "quant-rd-example"
+name: "Quant RD 路线示例"
+status: "exploring"
+version: 1
+
+description: "仅用于验证路线配置结构，不代表真实路线价值判断。"
+
+dimension_weights:
+  technical_growth: 0.35
+  relationship_capital: 0.15
+  information_gain: 0.20
+  social_engagement: 0.05
+  wellbeing: 0.10
+  autonomy: 0.15
+
+specific_signals:
+  - id: "relevant-project"
+    label: "完成相关项目"
+    daily_delta: 2.0
+  - id: "industry-conversation"
+    label: "获得行业一手信息"
+    daily_delta: 1.0
+  - id: "interview-progress"
+    label: "相关面试取得进展"
+    daily_delta: 3.0
+
+costs:
+  - id: "sustained-burnout"
+    label: "持续性透支"
+    daily_delta: -2.0
+
+window:
+  enabled: false
+  starts_on: null
+  ends_on: null
+  decay_per_day: 0.0
+
+state:
+  initial_value: 50.0
+  minimum: 0.0
+  maximum: 100.0
+
+calculation:
+  daily_delta_range: [-5.0, 5.0]
+  formula_version: "route-delta-0.1.0"

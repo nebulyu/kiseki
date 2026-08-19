@@ -1,0 +1,45 @@
+schema_version: "0.1.0"
+id: "default-daily-rubric"
+name: "默认每日评估规则"
+language: "zh-CN"
+
+score_policy:
+  range: [0, 100]
+  missing_value: null
+  precision: integer
+  anchors:
+    0: "存在明确且严重的负面影响"
+    25: "明显负向，损失或消耗占主导"
+    50: "大致中性，或正负影响接近平衡"
+    75: "存在清晰且有意义的正向收获"
+    100: "极强且罕见的正向影响，需要充分证据"
+
+overall_score:
+  mode: "independent"
+  description: "整体体验分独立判断，不直接对六个成长维度做加权平均。"
+
+evidence_policy:
+  impact_range: [-1.0, 1.0]
+  require_source_excerpt: true
+  unsupported_inference: "forbidden"
+  contradictory_evidence: "preserve"
+
+dimensions:
+  technical_growth:
+    label: "技术成长"
+    description: "可迁移的知识、能力、解决问题经验和产出质量。"
+  relationship_capital:
+    label: "人际资本"
+    description: "关系深度、信任、合作可能性和支持网络。"
+  information_gain:
+    label: "信息增益"
+    description: "能够改变认知或决策的新信息，而不是信息数量。"
+  social_engagement:
+    label: "社会参与"
+    description: "交流、表达、融入和社会连接的实际程度。"
+  wellbeing:
+    label: "身心状态"
+    description: "情绪、精力、睡眠、压力和身体感受。"
+  autonomy:
+    label: "自主感"
+    description: "主动选择、控制节奏和按照自身意图行动的程度。"

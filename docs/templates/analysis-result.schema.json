@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kiseki.local/schemas/analysis-result-0.1.0.json",
+  "title": "Kiseki Analysis Result",
+  "description": "最简原型中，模型对一条每日记录给出的结构化候选分析。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "entry_date",
+    "overall_score",
+    "dimensions",
+    "summary",
+    "evidence",
+    "confidence",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "entry_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "overall_score": {
+      "description": "对当天整体体验的候选评分；信息不足时为 null。",
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "technical_growth",
+        "relationship_capital",
+        "information_gain",
+        "social_engagement",
+        "wellbeing",
+        "autonomy"
+      ],
+      "properties": {
+        "technical_growth": { "$ref": "#/$defs/dimension_score" },
+        "relationship_capital": { "$ref": "#/$defs/dimension_score" },
+        "information_gain": { "$ref": "#/$defs/dimension_score" },
+        "social_engagement": { "$ref": "#/$defs/dimension_score" },
+        "wellbeing": { "$ref": "#/$defs/dimension_score" },
+        "autonomy": { "$ref": "#/$defs/dimension_score" }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/evidence_item" }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 200
+      }
+    }
+  },
+  "$defs": {
+    "dimension_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["score", "confidence", "evidence_ids", "rationale"],
+      "properties": {
+        "score": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "rationale": {
+          "type": "string",
+          "maxLength": 300
+        }
+      }
+    },
+    "evidence_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_excerpt",
+        "dimension",
+        "impact",
+        "confidence",
+        "reason"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^e[0-9]+$"
+        },
+        "source_excerpt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "dimension": {
+          "enum": [
+            "overall_experience",
+            "technical_growth",
+            "relationship_capital",
+            "information_gain",
+            "social_engagement",
+            "wellbeing",
+            "autonomy"
+          ]
+        },
+        "impact": {
+          "description": "负向到正向的证据影响，范围为 -1 到 1。",
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      }
+    }
+  }
+}
