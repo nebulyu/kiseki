@@ -1,6 +1,6 @@
 # 当前状态
 
-最后更新：2026-08-20
+最后更新：2026-08-25
 
 ## 当前阶段
 
@@ -28,6 +28,7 @@
 - 将 DeepSeek 不支持的 `json_schema` 响应格式调整为 `json_object`，并把完整 Pydantic Schema 放入提示词。
 - 使用 `deepseek-v4-pro` 完成真实 API 调用；信息不足的测试输入得到 `overall_score: null` 和低置信度，符合当前评分规则。
 - 扩展 `.gitignore`，排除 API 配置、个人数据库、SQLite 辅助文件、导出、备份、日志和常见密钥文件。
+- 为 `add` 增加 `--file` 和 `--date`，支持读取 UTF-8 的 `.md`/`.txt` 多行日记并进入现有分析流程。
 
 ## 本地开发环境概况
 

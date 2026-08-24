@@ -10,6 +10,7 @@ from schema import AnalysisResult
 
 DATABASE_PATH = Path(__file__).resolve().parent / "data" / "kiseki.db"
 LIST_LIMIT = 20
+SUPPORTED_ENTRY_SUFFIXES = {".md", ".txt"}
 
 
 def open_database() -> sqlite3.Connection:
@@ -41,16 +42,43 @@ def open_database() -> sqlite3.Connection:
     return connection
 
 
-def add_record() -> None:
-    today = date.today().isoformat()
-    entered_date = input(f"Date [{today}]: ").strip() or today
-
+def parse_entry_date(value: str) -> str:
     try:
-        entry_date = date.fromisoformat(entered_date).isoformat()
+        return date.fromisoformat(value).isoformat()
     except ValueError as error:
         raise SystemExit("Date must use YYYY-MM-DD format.") from error
 
-    raw_text = input("Text: ")
+
+def read_entry_file(file_path: Path) -> str:
+    path = file_path.expanduser()
+    if path.suffix.lower() not in SUPPORTED_ENTRY_SUFFIXES:
+        raise SystemExit("File must use .md or .txt format.")
+    if not path.is_file():
+        raise SystemExit(f"File not found: {path}")
+
+    try:
+        raw_text = path.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError as error:
+        raise SystemExit(f"File must be UTF-8 encoded: {path}") from error
+    except OSError as error:
+        raise SystemExit(f"Could not read file: {path}: {error}") from error
+
+    if not raw_text.strip():
+        raise SystemExit(f"File is empty: {path}")
+    return raw_text.strip()
+
+
+def add_record(file_path: Path | None = None, date_value: str | None = None) -> None:
+    today = date.today().isoformat()
+    if date_value is None and file_path is None:
+        date_value = input(f"Date [{today}]: ").strip() or today
+    entry_date = parse_entry_date(date_value or today)
+
+    if file_path is not None:
+        raw_text = read_entry_file(file_path)
+        print(f"Loaded {len(raw_text)} characters from {file_path}.")
+    else:
+        raw_text = input("Text: ")
     if not raw_text.strip():
         raise SystemExit("Text cannot be empty.")
 
@@ -163,7 +191,19 @@ def main() -> None:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    subparsers.add_parser("add", help="Add a journal record.")
+    add_parser = subparsers.add_parser("add", help="Add a journal record.")
+    add_parser.add_argument(
+        "--file",
+        type=Path,
+        metavar="PATH",
+        help="Read journal text from a UTF-8 .md or .txt file.",
+    )
+    add_parser.add_argument(
+        "--date",
+        dest="entry_date",
+        metavar="YYYY-MM-DD",
+        help="Use this entry date; defaults to today in file mode.",
+    )
     subparsers.add_parser("list", help="List recent journal records.")
     show_parser = subparsers.add_parser("show", help="Show one journal record.")
     show_parser.add_argument("record_id", type=int, metavar="id")
@@ -171,7 +211,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "add":
-        add_record()
+        add_record(args.file, args.entry_date)
     elif args.command == "list":
         list_records()
     else:

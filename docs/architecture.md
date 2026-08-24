@@ -47,11 +47,13 @@ kiseki/
 
 ```text
 python app.py add
+python app.py add --file <path> [--date YYYY-MM-DD]
 python app.py list
 python app.py show <id>
 ```
 
-- `add`：输入日期和感想，调用模型并保存结果。
+- `add`：交互输入日期和单行感想，调用模型并保存结果。
+- `add --file`：读取 UTF-8 的 `.md`/`.txt` 完整内容；文件路径不写入数据库。
 - `list`：查看最近记录的日期、总分和摘要。
 - `show`：查看某条记录的原文和完整分析。
 
