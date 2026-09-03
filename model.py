@@ -9,6 +9,7 @@ from schema import AnalysisResult
 
 
 PROMPT_VERSION = "0.1.0"
+REQUEST_TIMEOUT_SECONDS = 120.0
 SYSTEM_PROMPT = """你是 Kiseki 的每日记录分析器。你的任务是根据用户提供的原始记录，提取可追溯证据，并按照给定评分规则输出结构化候选分析。
 
 约束：
@@ -25,7 +26,7 @@ def build_user_prompt(entry_date: str, raw_text: str) -> str:
     return f"记录日期：{entry_date}\n\n原始记录：\n{raw_text}"
 
 
-def analyze_entry(entry_date: str, raw_text: str) -> tuple[str, AnalysisResult]:
+def _load_config() -> dict[str, str]:
     load_dotenv(Path(__file__).resolve().parent / ".env")
 
     config = {
@@ -36,6 +37,15 @@ def analyze_entry(entry_date: str, raw_text: str) -> tuple[str, AnalysisResult]:
     missing = [name for name, value in config.items() if not value]
     if missing:
         raise RuntimeError(f"Missing configuration: {', '.join(missing)}")
+    return config
+
+
+def get_model_name() -> str:
+    return _load_config()["KISEKI_MODEL"]
+
+
+def analyze_entry(entry_date: str, raw_text: str) -> tuple[str, AnalysisResult]:
+    config = _load_config()
 
     model_name = config["KISEKI_MODEL"]
     schema_json = json.dumps(AnalysisResult.model_json_schema(), ensure_ascii=False)
@@ -44,6 +54,7 @@ def analyze_entry(entry_date: str, raw_text: str) -> tuple[str, AnalysisResult]:
         api_key=config["KISEKI_API_KEY"],
         base_url=config["KISEKI_BASE_URL"],
         max_retries=0,
+        timeout=REQUEST_TIMEOUT_SECONDS,
     ) as client:
         response = client.chat.completions.create(
             model=model_name,

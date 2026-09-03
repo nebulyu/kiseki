@@ -1,5 +1,6 @@
 import argparse
 import json
+import time
 from datetime import date
 from pathlib import Path
 
@@ -11,7 +12,7 @@ from database import (
     store_analysis_error,
     store_review,
 )
-from model import PROMPT_VERSION, analyze_entry
+from model import PROMPT_VERSION, analyze_entry, get_model_name
 from review import (
     SCORE_FIELDS,
     calculate_effective_scores,
@@ -78,24 +79,74 @@ def add_record(file_path: Path | None = None, date_value: str | None = None) -> 
     record_id = insert_record(entry_date, raw_text)
 
     print(f"Saved record {record_id}.")
+    run_analysis(record_id, entry_date, raw_text)
+
+
+def run_analysis(
+    record_id: int,
+    entry_date: str,
+    raw_text: str,
+) -> tuple[AnalysisResult, int, float]:
+    started_at = time.perf_counter()
 
     try:
+        configured_model = get_model_name()
+        print(
+            f"Analyzing record {record_id} with {configured_model}...",
+            flush=True,
+        )
         model_name, analysis = analyze_entry(entry_date, raw_text)
     except Exception as error:
+        elapsed = time.perf_counter() - started_at
         store_analysis_error(record_id, str(error))
-        raise SystemExit(f"Analysis failed for record {record_id}: {error}") from error
+        raise SystemExit(
+            f"Analysis failed for record {record_id} after {elapsed:.1f} seconds: "
+            f"{error}"
+        ) from error
 
-    store_analysis(
+    elapsed = time.perf_counter() - started_at
+    revision = store_analysis(
         record_id,
         model=model_name,
         analysis_json=analysis.model_dump_json(),
         prompt_version=PROMPT_VERSION,
     )
 
+    print(f"Analysis completed in {elapsed:.1f} seconds.")
+    print(f"Analysis revision: {revision}")
     score = "null" if analysis.overall_score is None else analysis.overall_score
     print(f"Overall score: {score}")
     print(f"Summary: {analysis.summary}")
     print(f"Confidence: {analysis.confidence:.2f}")
+    return analysis, revision, elapsed
+
+
+def confirm_reanalysis() -> bool:
+    while True:
+        answer = input("Analyze again? [y/N]: ").strip().lower()
+        if answer in {"", "n", "no"}:
+            return False
+        if answer in {"y", "yes"}:
+            return True
+        print("Enter y or n.")
+
+
+def analyze_record(record_id: int) -> None:
+    record = fetch_record(record_id)
+    if record is None:
+        raise SystemExit(f"Record {record_id} not found.")
+
+    if record["analysis_json"]:
+        print(f"Record {record_id} already has an AI analysis.")
+        print(f"Current model: {record['model'] or '-'}")
+        print(f"Current revision: {record['analysis_revision']}")
+        if record["error_message"]:
+            print(f"Latest reanalysis failed: {record['error_message']}")
+        if not confirm_reanalysis():
+            print("Analysis unchanged.")
+            return
+
+    run_analysis(record_id, record["entry_date"], record["raw_text"])
 
 
 def parse_review(review_json: str | None) -> AnalysisReview | None:
@@ -180,6 +231,8 @@ def show_record(record_id: int) -> None:
             print(f"Model: {record['model']}")
         print(f"Prompt version: {record['prompt_version'] or '-'}")
         print(f"Analysis revision: {record['analysis_revision']}")
+        if record["error_message"]:
+            print(f"Latest reanalysis failed: {record['error_message']}")
         print(json.dumps(analysis.model_dump(mode="json"), ensure_ascii=False, indent=2))
 
         review = parse_review(record["review_json"])
@@ -389,6 +442,11 @@ def main() -> None:
     subparsers.add_parser("list", help="List recent journal records.")
     show_parser = subparsers.add_parser("show", help="Show one journal record.")
     show_parser.add_argument("record_id", type=int, metavar="id")
+    analyze_parser = subparsers.add_parser(
+        "analyze",
+        help="Analyze or reanalyze an existing journal record.",
+    )
+    analyze_parser.add_argument("record_id", type=int, metavar="id")
     review_parser = subparsers.add_parser(
         "review",
         help="Accept, adjust, or reject an AI analysis.",
@@ -403,7 +461,9 @@ def main() -> None:
         list_records()
     elif args.command == "show":
         show_record(args.record_id)
-    else:
+    elif args.command == "analyze":
+        analyze_record(args.record_id)
+    elif args.command == "review":
         review_record(args.record_id)
 
 

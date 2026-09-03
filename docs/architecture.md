@@ -16,18 +16,25 @@ Kiseki 当前是个人原型，不是准备发布的通用平台。架构目标�
 
 ```mermaid
 flowchart LR
-    A["输入当天感想"] --> B["插入 daily_records"]
-    B --> C["调用模型 API"]
-    C --> D["Pydantic 解析 JSON"]
-    D --> E["更新 analysis_json 与 revision"]
-    E --> F["终端显示 AI 评分"]
-    E --> G["本地 review"]
-    G --> H["独立保存 review_json"]
-    E --> I["计算最终有效分数"]
-    H --> I
+    A["add 输入或导入"] --> B["插入 daily_records"]
+    J["analyze id"] --> K["读取已有日期与原文"]
+    B --> C["共享分析流程：进度与计时"]
+    K --> C
+    C --> D["模型 API：120 秒超时，不重试"]
+    D --> E["Pydantic 解析 JSON"]
+    E --> F["成功：更新分析并增加 revision"]
+    D -. 调用失败 .-> X["只更新 error_message"]
+    E -. 解析失败 .-> X
+    F --> G["终端显示耗时与 AI 结果"]
+    F --> H["本地 review"]
+    H --> I["独立保存 review_json"]
+    F --> L["计算最终有效分数"]
+    I --> L
 ```
 
-保存原文后再调用模型，是第一版唯一必要的失败保护。调用失败时显示错误，并在当前记录中留下错误信息即可，不建设独立状态机和自动重试机制。
+`add` 始终先保存原文，再进入共享分析流程；`analyze <id>` 读取已有记录后进入同一流程，不插入新记录。请求前立即显示当前配置的模型并刷新终端，使用 `time.perf_counter()` 统计耗时。模型请求固定超时 120 秒且关闭 SDK 自动重试，不建设独立状态机、队列或后台任务。
+
+成功时在同一次 SQLite 更新中写入模型、分析 JSON 和提示词版本，清除旧错误，并让 revision 原子加一；`review_json` 不被覆盖，因此旧 Review 会按既有规则派生为 stale。失败时只更新 `error_message`：已有分析、模型、提示词版本、revision 和 Review 均保留，失败本身不会让有效 Review 变为 stale。
 
 `review` 是独立的本地分支，不经过模型 API。它不修改 `raw_text` 或 `analysis_json`，只保存人工判断，并在读取时与当前 AI 分析合成最终有效分数。
 
@@ -50,13 +57,14 @@ kiseki/
 
 ## CLI
 
-当前 CLI 提供四类操作：
+当前 CLI 提供五类操作：
 
 ```text
 python app.py add
 python app.py add --file <path> [--date YYYY-MM-DD]
 python app.py list
 python app.py show <id>
+python app.py analyze <id>
 python app.py review <id>
 ```
 
@@ -64,6 +72,7 @@ python app.py review <id>
 - `add --file`：读取 UTF-8 的 `.md`/`.txt` 完整内容；文件路径不写入数据库。
 - `list`：查看最近记录的日期、AI 总分、最终有效总分、Review 状态和摘要。
 - `show`：查看某条记录的原文、完整 AI 分析、人工 Review 和有效分数。
+- `analyze`：原地分析未分析或失败记录；已有成功分析时默认取消，明确确认后才覆盖当前成功分析。
 - `review`：在本地接受、修正或否决已有 AI 分析，不调用模型。
 
 ## 数据库
@@ -79,7 +88,7 @@ python app.py review <id>
 | raw_text | 当天输入的原文 |
 | model | 使用的模型名称 |
 | analysis_json | 模型返回并解析后的完整 JSON；尚无结果时为空 |
-| error_message | 最近一次调用错误；成功时为空 |
+| error_message | 最近一次分析错误；下一次成功时清空，已有成功分析不因错误而删除 |
 | prompt_version | 当前分析使用的提示词版本；旧分析可为空 |
 | analysis_revision | 当前分析 revision；新分析成功写入时原子加一 |
 | review_json | 独立的人工 Review JSON；尚未 Review 时为空 |
@@ -118,14 +127,15 @@ Review JSON 的持久化状态只有三种：
 - 评分依据。
 - 置信度。
 
-Pydantic 的作用只是及时发现返回格式不符合预期，不在第一版建设复杂的校验恢复流程。解析失败时显示原始错误，保留日记原文，然后人工调整提示词或重新运行。
+Pydantic 的作用只是及时发现返回格式不符合预期，不在第一版建设复杂的校验恢复流程。解析失败时显示错误并保留日记原文；用户可用 `analyze <id>` 原地重试。每条记录仍只保存最新一次成功分析，没有分析历史。
 
 ## 配置与隐私
 
 - 从 `.env` 读取 `KISEKI_API_KEY`、`KISEKI_BASE_URL` 和 `KISEKI_MODEL`，直接连接一个 OpenAI-compatible API；当前个人配置使用千问兼容接口。
 - `.env` 与 `data/kiseki.db` 不提交到 Git。
 - API Key 不写入数据库。
-- 使用外部模型时，日记原文会发送给对应服务商。
+- `add` 和 `analyze` 会把记录日期与日记原文发送给对应模型服务商。
+- `review`、`list` 和 `show` 只访问本地数据，不调用模型。
 
 ## 什么时候再扩展
 

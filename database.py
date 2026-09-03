@@ -80,9 +80,9 @@ def store_analysis(
     analysis_json: str,
     prompt_version: str,
     database_path: Path = DATABASE_PATH,
-) -> None:
+) -> int:
     with closing(open_database(database_path)) as connection, connection:
-        connection.execute(
+        cursor = connection.execute(
             """
             UPDATE daily_records
             SET model = ?,
@@ -94,6 +94,15 @@ def store_analysis(
             """,
             (model, analysis_json, prompt_version, record_id),
         )
+        if cursor.rowcount != 1:
+            raise ValueError(f"Record {record_id} not found.")
+        row = connection.execute(
+            "SELECT analysis_revision FROM daily_records WHERE id = ?",
+            (record_id,),
+        ).fetchone()
+        if row is None:
+            raise ValueError(f"Record {record_id} not found.")
+        return int(row["analysis_revision"])
 
 
 def fetch_recent_records(
