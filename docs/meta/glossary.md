@@ -24,6 +24,18 @@
 
 模型根据当前规则给出的建议值。它可以被用户修正，也可能在未来被确定性评分器替代。
 
+## User Review / 人工复核
+
+用户对某次 AI 分析的独立判断。持久化状态包括 `accepted`、`adjusted` 和 `rejected`；它不覆盖原文或 AI 原始分析。
+
+## Effective Score / 最终有效分数
+
+当前 AI 候选分与有效 Review 合成后的读取结果。人工覆盖优先，rejected 没有有效分数，stale Review 的旧覆盖不参与计算。
+
+## Stale Review / 过期复核
+
+Review 保存的分析 revision、模型或提示词版本与当前分析不一致时的派生状态。旧 Review 继续保留供查看，但需要重新确认后才能再次影响有效分数。
+
 ## Confidence / 置信度
 
 原文对某项判断的支持程度，范围为 0 到 1。置信度低不等于分数低。

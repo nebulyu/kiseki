@@ -1,10 +1,18 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 
 WarningText = Annotated[str, StringConstraints(max_length=200)]
+ScoreValue = Annotated[int, Field(ge=0, le=100)] | None
 EvidenceDimension = Literal[
     "overall_experience",
     "technical_growth",
@@ -13,6 +21,23 @@ EvidenceDimension = Literal[
     "social_engagement",
     "wellbeing",
     "autonomy",
+]
+ScoreField = Literal[
+    "overall_score",
+    "technical_growth",
+    "relationship_capital",
+    "information_gain",
+    "social_engagement",
+    "wellbeing",
+    "autonomy",
+]
+ReviewStatus = Literal["accepted", "adjusted", "rejected"]
+ReviewState = Literal[
+    "unreviewed",
+    "accepted",
+    "adjusted",
+    "rejected",
+    "stale",
 ]
 
 
@@ -65,3 +90,45 @@ class AnalysisResult(BaseModel):
     evidence: list[EvidenceItem]
     confidence: float = Field(ge=0, le=1)
     warnings: list[WarningText]
+
+
+class ScoreValues(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    overall_score: ScoreValue
+    technical_growth: ScoreValue
+    relationship_capital: ScoreValue
+    information_gain: ScoreValue
+    social_engagement: ScoreValue
+    wellbeing: ScoreValue
+    autonomy: ScoreValue
+
+
+class AnalysisReview(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    schema_version: Literal["0.1.0"] = "0.1.0"
+    status: ReviewStatus
+    overrides: dict[ScoreField, ScoreValue] = Field(default_factory=dict)
+    reason: str = Field(default="", max_length=1000)
+    analysis_revision: int = Field(ge=0)
+    analysis_model: str | None
+    prompt_version: str | None
+    reviewed_at: datetime
+
+    @model_validator(mode="after")
+    def validate_status_fields(self) -> "AnalysisReview":
+        if self.status == "adjusted" and not self.overrides:
+            raise ValueError("adjusted review requires at least one override")
+        if self.status != "adjusted" and self.overrides:
+            raise ValueError(f"{self.status} review cannot contain overrides")
+        if self.status == "rejected" and not self.reason.strip():
+            raise ValueError("rejected review requires a reason")
+        return self
+
+
+class EffectiveResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    state: ReviewState
+    scores: ScoreValues | None

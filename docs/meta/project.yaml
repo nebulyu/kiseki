@@ -15,8 +15,8 @@ status:
   lifecycle: "active"
   phase: "phase-2-personal-trial"
   implementation: "working-cli-mvp"
-  current_milestone: "scoring-calibration"
-  last_reviewed: "2026-08-20"
+  current_milestone: "scoring-calibration-review-loop"
+  last_reviewed: "2026-08-26"
 
 product:
   audience:
@@ -34,6 +34,7 @@ architecture:
   persistence: "SQLite"
   validation: "Pydantic"
   model_integration: "direct-single-provider"
+  review_logic: "pure-functions"
   future_ui: "React-TypeScript"
   future_desktop_shell: "Tauri"
 

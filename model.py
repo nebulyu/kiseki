@@ -8,6 +8,7 @@ from openai import OpenAI
 from schema import AnalysisResult
 
 
+PROMPT_VERSION = "0.1.0"
 SYSTEM_PROMPT = """你是 Kiseki 的每日记录分析器。你的任务是根据用户提供的原始记录，提取可追溯证据，并按照给定评分规则输出结构化候选分析。
 
 约束：

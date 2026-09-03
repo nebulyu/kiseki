@@ -32,13 +32,12 @@ uv --version
 uv self update
 ```
 
-## 计划中的项目初始化
+## 项目初始化与运行
 
-以下命令将在开始实现 CLI 时执行，目前文档阶段不要求仓库已经包含这些文件：
+项目已经完成初始化。在新机器上进入仓库后运行：
 
 ```powershell
-uv init --python 3.13
-uv add openai pydantic python-dotenv
+uv sync
 ```
 
 运行命令统一使用项目环境：
@@ -55,13 +54,13 @@ uv run python app.py --help
 
 ```dotenv
 KISEKI_API_KEY=
-KISEKI_BASE_URL=https://api.deepseek.com
-KISEKI_MODEL=deepseek-v4-pro
+KISEKI_BASE_URL=
+KISEKI_MODEL=
 ```
 
 `.env` 必须被 Git 忽略。API Key 不得写入源码或数据库。
 
-第一版直接调用一个选定的 OpenAI-compatible API，不设计 Provider 接口。更换模型时修改配置或少量调用代码即可。
+第一版直接调用一个选定的 OpenAI-compatible API，不设计 Provider 接口。当前个人配置使用千问兼容接口，但本地 Base URL、模型名和 API Key 不写入文档。更换模型时修改本地配置或少量调用代码即可。
 
 ## 第一阶段不需要的工具
 

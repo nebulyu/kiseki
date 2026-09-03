@@ -12,13 +12,14 @@ Kiseki 是一个本地优先、AI 辅助的个人日记与轨迹分析项目。�
 
 - 使用 `add` 输入日期和当天感想。
 - 使用 `add --file` 读取 UTF-8 的 Markdown 或文本日记。
-- 调用 DeepSeek OpenAI-compatible API。
+- 通过环境变量连接一个 OpenAI-compatible API；当前个人配置使用千问兼容接口。
 - 使用 Pydantic 校验结构化 JSON。
 - 将原文和分析结果保存到本地 SQLite。
-- 使用 `list` 查看最近记录。
-- 使用 `show` 查看原文和完整分析。
+- 使用 `review <id>` 接受、修正或否决 AI 分析；Review 全程不调用模型。
+- 使用 `list` 对照 AI 分数、最终有效分数和 Review 状态。
+- 使用 `show` 查看原文、完整 AI 分析、人工 Review 和有效分数。
 
-真实 DeepSeek 调用已经验证通过。长期路线、趋势曲线和图形界面尚未实现。
+模型分析链路和本地 Review 校准闭环均已验证。长期路线、趋势曲线和图形界面尚未实现。
 
 ## 分析结果
 
@@ -35,6 +36,16 @@ Kiseki 是一个本地优先、AI 辅助的个人日记与轨迹分析项目。�
 
 模型只能根据原文判断，不应把没有写出的经历自动补成事实。输入过于简短时返回 `null` 和较低置信度是正常行为。
 
+人工 Review 与 AI 原始结果分开保存：
+
+- `accepted`：认可当前 AI 分析，最终分数使用 AI 值。
+- `adjusted`：只保存人工覆盖的字段；未覆盖字段沿用 AI 值，`null` 表示人工判断证据不足。
+- `rejected`：整次分析不参与最终分数。
+- `unreviewed`：尚未 Review，暂时使用 AI 值。
+- `stale`：旧 Review 对应的分析版本已变化，保留旧 Review 但忽略其覆盖，暂时使用当前 AI 值。
+
+其中前三种写入 Review JSON，后两种由程序根据当前记录派生。Review 不修改日记原文，也不覆盖 `analysis_json`。
+
 ## 隐私与数据流
 
 ### 保存在本机的内容
@@ -42,6 +53,7 @@ Kiseki 是一个本地优先、AI 辅助的个人日记与轨迹分析项目。�
 - 日记原文。
 - 模型名称。
 - 模型返回的分析 JSON。
+- 提示词版本、分析 revision 和独立的人工 Review JSON。
 - 调用失败时的错误信息。
 - API Key 和 API 配置。
 
@@ -67,7 +79,7 @@ API 配置位于：
 - 日记原文。
 - Kiseki 的分析提示词和输出结构。
 
-当前配置面向 DeepSeek，因此分析并不是完全离线完成的。服务商是否以及如何留存请求数据，取决于对应服务的政策和账户设置。
+当前个人配置使用千问兼容接口，因此 `add` 的分析步骤并不是完全离线完成的。服务商是否以及如何留存请求数据，取决于对应服务的政策和账户设置。`review`、`list` 和 `show` 只读取或更新本地 SQLite，不发送日记内容，也不调用模型 API。
 
 Kiseki 本身没有账号、云数据库或自动同步功能。
 
@@ -81,7 +93,7 @@ Kiseki 本身没有账号、云数据库或自动同步功能。
 
 - Python 3.13 或更高版本。
 - [uv](https://docs.astral.sh/uv/)。
-- 可用的 DeepSeek API Key。
+- 可用的 OpenAI-compatible API Key、Base URL 和模型名。
 
 安装 uv：
 
@@ -108,8 +120,8 @@ Copy-Item .env.example .env
 
 ```dotenv
 KISEKI_API_KEY=
-KISEKI_BASE_URL=https://api.deepseek.com
-KISEKI_MODEL=deepseek-v4-pro
+KISEKI_BASE_URL=
+KISEKI_MODEL=
 ```
 
 不要把真实 API Key 写入 `.env.example`、README、源码或 Git commit。
@@ -166,7 +178,7 @@ uv run python app.py add --file "C:\path with spaces\journal.txt" --date 2026-08
 uv run python app.py list
 ```
 
-默认显示最近 20 条记录的 ID、日期、总分和摘要。
+默认显示最近 20 条记录的 ID、日期、AI 总分、最终有效总分、Review 状态和摘要。`rejected` 的最终分数显示为 `-`。
 
 ### 查看完整记录
 
@@ -174,7 +186,23 @@ uv run python app.py list
 uv run python app.py show 1
 ```
 
-将 `1` 替换为 `list` 中显示的实际记录 ID。
+将 `1` 替换为 `list` 中显示的实际记录 ID。输出会清楚分开原文、AI Analysis、User Review 和 Effective Scores。
+
+### 校准 AI 分析
+
+```powershell
+uv run python app.py review 1
+```
+
+命令先显示 AI 摘要、整体分、六维分数及各自置信度，然后提供：
+
+```text
+[a] Accept / [e] Edit / [r] Reject / [s] Skip
+```
+
+直接回车默认为 Accept。Edit 会依次询问整体分和六个维度：回车沿用 AI 值，输入 `0` 到 `100` 保存人工覆盖，输入 `null` 将该项最终设为未知；如果七项都直接回车，则按 `accepted` 保存。Reject 要求填写原因。Skip 不写数据库；已有 Review 时会先显示旧值并确认是否覆盖。
+
+Review 只操作本地数据，不调用 API，不修改日记原文，也不覆盖 AI 的完整分析结果。
 
 ### 查看帮助
 
@@ -212,9 +240,11 @@ git diff --cached
 
 ```text
 kiseki/
-├── app.py              # CLI、SQLite 和主流程
-├── model.py            # DeepSeek API 调用和提示词
-├── schema.py           # Pydantic 分析结构
+├── app.py              # argparse、终端输入和输出
+├── database.py         # SQLite 建表、兼容升级和普通读写
+├── model.py            # OpenAI-compatible API 调用和提示词
+├── review.py           # Review 状态与有效分数纯业务函数
+├── schema.py           # AI 与 Review 的 Pydantic 结构
 ├── pyproject.toml      # Python 项目与依赖
 ├── uv.lock             # 依赖锁定
 ├── .env.example        # 无密钥的配置模板
@@ -227,8 +257,9 @@ kiseki/
 ## 当前限制
 
 - 交互输入仅支持单行文本；多行内容可以通过 `.md` 或 `.txt` 文件导入。
-- 一条记录只保存当前分析结果。
+- 一条记录只保存当前 AI 分析和当前 Review；没有分析历史表或 Review 历史。
 - 没有编辑、删除和重新分析命令。
+- 没有校准汇总、自动训练或自动调整提示词。
 - 没有趋势曲线和长期路线计算。
 - 没有数据库加密和云端同步。
 - 评分是模型基于有限文本给出的候选判断，不是客观测量。
