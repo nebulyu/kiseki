@@ -1,46 +1,46 @@
-schema_version: "0.1.0"
-id: "quant-rd-example"
-name: "Quant RD 路线示例"
+# 文档样例，当前程序不加载。与 goal-definition.example.yaml 配套。
+# 未来个人配置存放在 private/routes/；以下仅为虚构示例。
+schema_version: "0.2.0"
+id: "agent-project-example"
+goal_id: "agent-capability-example"
+name: "通过实际项目积累 Agent 能力"
 status: "exploring"
 version: 1
 
-description: "仅用于验证路线配置结构，不代表真实路线价值判断。"
+description: "围绕一个可交付项目学习、实践并获得反馈，观察这条路线是否适合自己。"
 
-dimension_weights:
-  technical_growth: 0.35
-  relationship_capital: 0.15
-  information_gain: 0.20
-  social_engagement: 0.05
-  wellbeing: 0.10
-  autonomy: 0.15
+key_hypotheses:
+  - "实际交付能够暴露知识缺口，并促进可迁移的能力积累。"
+  - "外部使用反馈能帮助检验项目是否解决真实问题。"
+
+# 仅表示关注方向，第一版不对每日六维分数做加权求和。
+focus_dimensions:
+  - "technical_growth"
+  - "information_gain"
+  - "autonomy"
 
 specific_signals:
-  - id: "relevant-project"
-    label: "完成相关项目"
-    daily_delta: 2.0
-  - id: "industry-conversation"
-    label: "获得行业一手信息"
-    daily_delta: 1.0
-  - id: "interview-progress"
-    label: "相关面试取得进展"
-    daily_delta: 3.0
+  - id: "working-delivery"
+    label: "完成可运行的相关交付"
+    match_when: "原文明确描述完成并实际运行了与目标相关的功能或作品；仅有计划或打算不匹配。"
+    daily_delta: 2
+  - id: "user-feedback"
+    label: "获得实际使用反馈"
+    match_when: "原文明确记录他人实际使用项目后的具体反馈，而非计划征求意见。"
+    daily_delta: 1
+  - id: "resolved-obstacle"
+    label: "解决关键障碍并形成理解"
+    match_when: "原文明确描述解决相关技术障碍，并说明原因或可复用的经验。"
+    daily_delta: 2
 
 costs:
-  - id: "sustained-burnout"
-    label: "持续性透支"
-    daily_delta: -2.0
-
-window:
-  enabled: false
-  starts_on: null
-  ends_on: null
-  decay_per_day: 0.0
-
-state:
-  initial_value: 50.0
-  minimum: 0.0
-  maximum: 100.0
+  - id: "reported-overextension"
+    label: "明确记录投入导致的透支"
+    match_when: "用户在原文中明确把该路线的投入与休息受损或明显疲惫联系起来；不推断疾病或未描述的因果。"
+    daily_delta: -2
 
 calculation:
-  daily_delta_range: [-5.0, 5.0]
-  formula_version: "route-delta-0.1.0"
+  formula_version: "route-evidence-0.1.0"
+  method: "sum_unique_signals_clamped"
+  daily_delta_range: [-5, 5]
+  missing_value: null

@@ -1,3 +1,5 @@
+# 每日评分规则的文档样例，当前 model.py 不会加载本文件。
+# 这是 0-100 的每日评分口径，与路线 -5 到 5 的当日影响规则分开。
 schema_version: "0.1.0"
 id: "default-daily-rubric"
 name: "默认每日评估规则"

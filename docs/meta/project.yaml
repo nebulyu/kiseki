@@ -15,8 +15,14 @@ status:
   lifecycle: "active"
   phase: "phase-2-personal-trial"
   implementation: "working-cli-mvp"
-  current_milestone: "scoring-calibration-review-loop"
-  last_reviewed: "2026-08-26"
+  current_milestone: "daily-review-and-manual-analysis-recovery"
+  next_milestone: "goal-route-config-loading"
+  route_specification: "documented"
+  route_implementation: "not-started"
+  parallel_workstreams:
+    - "daily-use-and-scoring-calibration"
+    - "long-term-route-mvp-development"
+  last_reviewed: "2026-09-06"
 
 product:
   audience:
@@ -35,8 +41,8 @@ architecture:
   validation: "Pydantic"
   model_integration: "direct-single-provider"
   review_logic: "pure-functions"
-  future_ui: "React-TypeScript"
-  future_desktop_shell: "Tauri"
+  future_ui: "undecided"
+  future_desktop_shell: "undecided"
 
 artifacts:
   source_of_truth:
@@ -45,11 +51,13 @@ artifacts:
     current_status: "docs/current-status.md"
     architecture: "docs/architecture.md"
     roadmap: "docs/roadmap.md"
+    long_term_routes: "docs/long-term-routes.md"
     decisions: "docs/meta/decisions.md"
     glossary: "docs/meta/glossary.md"
   templates:
     daily_entry: "docs/templates/daily-entry.md"
     analysis_schema: "docs/templates/analysis-result.schema.json"
     scoring_rubric: "docs/templates/scoring-rubric.example.yaml"
+    goal_definition: "docs/templates/goal-definition.example.yaml"
     route_definition: "docs/templates/route-definition.example.yaml"
     analysis_prompt: "docs/templates/analysis-prompt.md"
