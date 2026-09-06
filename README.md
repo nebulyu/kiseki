@@ -19,8 +19,9 @@ Kiseki 是一个本地优先、AI 辅助的个人日记与轨迹分析项目。�
 - 使用 `review <id>` 接受、修正或否决 AI 分析；Review 全程不调用模型。
 - 使用 `list` 对照 AI 分数、最终有效分数和 Review 状态。
 - 使用 `show` 查看原文、完整 AI 分析、人工 Review 和有效分数。
+- 使用 `route list` 和 `route show <route_id>` 加载、校验并查看个人目标与路线配置。
 
-基础模型分析链路和本地 Review 校准闭环此前已验证；本次新增的分析恢复流程只使用临时数据库与合成结果自检，没有调用真实模型。长期路线、趋势曲线和图形界面尚未实现。
+基础模型分析链路、本地 Review 校准闭环和分析恢复流程已经可用。长期路线本轮只实现配置加载与查看，不生成路线分析、分数、进度或时间线；趋势曲线和图形界面尚未实现。
 
 ## 分析结果
 
@@ -82,6 +83,8 @@ API 配置位于：
 
 当前个人配置使用千问兼容接口，因此 `add` 和 `analyze` 的分析步骤并不是完全离线完成的。服务商是否以及如何留存请求数据，取决于对应服务的政策和账户设置。`review`、`list` 和 `show` 只读取或更新本地 SQLite，不发送日记内容，也不调用模型 API。
 
+`route list` 和 `route show` 只读取本地目标与路线 YAML，不读取 `.env`、不调用模型，也不读取、初始化或修改日记数据库。个人目标和路线保存在已被 Git 忽略的 `private/` 中。
+
 Kiseki 本身没有账号、云数据库或自动同步功能。
 
 ### 本地保护边界
@@ -94,7 +97,7 @@ Kiseki 本身没有账号、云数据库或自动同步功能。
 
 - Python 3.13 或更高版本。
 - [uv](https://docs.astral.sh/uv/)。
-- 可用的 OpenAI-compatible API Key、Base URL 和模型名。
+- 使用 `add`、`analyze` 时需要可用的 OpenAI-compatible API Key、Base URL 和模型名；本地查看与帮助命令不需要 API 配置。
 
 安装 uv：
 
@@ -228,6 +231,38 @@ Review 只操作本地数据，不调用 API，不修改日记原文，也不覆
 uv run python app.py --help
 ```
 
+### 配置并查看长期目标与路线
+
+程序默认读取项目根目录的 `private/goals.yaml` 和 `private/routes/*.yaml`，与启动命令时的工作目录无关。公开模板只用于说明格式，不会作为默认个人配置加载，也不会自动复制或生成目标。
+
+首次配置可在 Windows PowerShell 中主动运行以下步骤。已存在的文件会保留；若已有配置，直接编辑它们即可：
+
+```powershell
+Set-Location E:\project\kiseki
+New-Item -ItemType Directory -Path private\routes -Force | Out-Null
+if (-not (Test-Path -LiteralPath private\goals.yaml)) {
+    Copy-Item -LiteralPath docs\templates\goal-definition.example.yaml -Destination private\goals.yaml
+}
+if (-not (Test-Path -LiteralPath private\routes\agent-project.yaml)) {
+    Copy-Item -LiteralPath docs\templates\route-definition.example.yaml -Destination private\routes\agent-project.yaml
+}
+notepad private\goals.yaml
+notepad private\routes\agent-project.yaml
+```
+
+模板内容为虚构示例。请改成自己的目标背景、成功标准、约束和路线；路线的 `goal_id` 必须对应目标 `id`。一个目标文件可包含多个目标，每个路线文件定义一条路线。使用以下命令查看；第二条中的 ID 是模板路线 ID，修改配置 ID 后也要替换它：
+
+```powershell
+uv run python app.py route list
+uv run python app.py route show agent-project-example
+```
+
+`route list` 按路线 ID 稳定排序，显示路线名称、所属目标及双方状态，暂停、完成目标或归档路线也可查看。`route show` 显示目标与路线的内容版本、背景、成功标准、约束、假设、关注维度、正向信号、成本和计算配置。这些都是配置定义，不是已产生的分析结果。
+
+目标文件的 `schema_version` 为 `"0.1.0"`，路线为 `"0.2.0"`；每个目标和路线的内容 `version` 必须为正整数。`target_date` 使用带引号的合法 `YYYY-MM-DD` 或 `null`。字段类型、状态、重复 ID、目标引用、六维名称及信号范围均会校验，未知字段或结构版本也会报出文件和问题。`calculation` 当前只接受模板中的固定规则配置，不执行评分计算。
+
+缺少 `private/goals.yaml` 会提示配置方法并以失败状态退出；目标配置有效但路线目录不存在或没有 `.yaml` 文件时，正常提示尚无路线。未知路线 ID 或无效配置会失败退出，不自动修复或迁移文件。
+
 ## GitHub 发布前检查
 
 以下内容会被忽略：
@@ -263,10 +298,14 @@ kiseki/
 ├── model.py            # OpenAI-compatible API 调用和提示词
 ├── review.py           # Review 状态与有效分数纯业务函数
 ├── schema.py           # AI 与 Review 的 Pydantic 结构
+├── route_schema.py     # 目标与路线配置的 Pydantic 结构
+├── routes.py           # 本地 YAML 加载、校验和关联
+├── route_cli.py        # 路线列表、详情和错误展示
 ├── pyproject.toml      # Python 项目与依赖
 ├── uv.lock             # 依赖锁定
 ├── .env.example        # 无密钥的配置模板
 ├── data/               # 本地日记，不进入 Git
+├── private/            # 个人日记文件、目标和路线配置，不进入 Git
 └── docs/               # 产品、架构、模板和路线图
 ```
 
@@ -280,15 +319,16 @@ kiseki/
 - 模型调用是同步前台任务，固定超时 120 秒且没有自动重试。
 - 没有校准汇总、自动训练或自动调整提示词。
 - 没有趋势曲线和长期路线计算。
+- 路线目前只支持配置加载与查看，没有路线分析、独立存储、路线 Review 或时间线。
 - 没有数据库加密和云端同步。
 - 评分是模型基于有限文本给出的候选判断，不是客观测量。
 
 ## 下一步：目标与路线 MVP
 
-日常使用和评分校准继续进行，长期路线 MVP 与数据积累并行开发。下一步依次是目标/路线配置加载、单篇日记的路线证据分析、独立人工确认和证据时间线。
+日常使用和评分校准继续进行，长期路线 MVP 与数据积累并行开发。目标/路线配置加载与查看已经实现；下一阶段是单篇日记对应单条路线的证据分析与独立存储，之后才是独立人工确认和证据时间线。
 
 详细范围见 [长期目标与路线 MVP 规格](docs/long-term-routes.md)。目标、路线、当日影响与长期积累分别表达不同含义；第一版不把每日分数累加成路线成功概率。
 
-[目标配置样例](docs/templates/goal-definition.example.yaml) 和 [路线配置样例](docs/templates/route-definition.example.yaml) 已整理，但当前程序尚不读取它们，`route` 命令也尚未实现。真实目标与路线未来放在被 Git 忽略的 `private/`，与公开样例分开。
+[目标配置样例](docs/templates/goal-definition.example.yaml) 和 [路线配置样例](docs/templates/route-definition.example.yaml) 仅展示支持的格式；个人配置由用户放在被 Git 忽略的 `private/`，与公开样例分开。
 
-本轮仅更新规划和模板；现有命令、API 配置、数据库与日记使用方式保持不变。UI 技术尚未定案，后续根据使用体验决定。
+本轮没有调用真实模型，也不改动每日分析、Review 或数据库结构。UI 技术尚未定案，后续根据使用体验决定。

@@ -21,6 +21,7 @@ from review import (
     extract_ai_scores,
 )
 from schema import AnalysisResult, AnalysisReview, ScoreField, ScoreValue
+from route_cli import register_route_commands, run_route_command
 
 
 LIST_LIMIT = 20
@@ -452,6 +453,7 @@ def main() -> None:
         help="Accept, adjust, or reject an AI analysis.",
     )
     review_parser.add_argument("record_id", type=int, metavar="id")
+    register_route_commands(subparsers)
 
     args = parser.parse_args()
 
@@ -465,6 +467,8 @@ def main() -> None:
         analyze_record(args.record_id)
     elif args.command == "review":
         review_record(args.record_id)
+    elif args.command == "route":
+        run_route_command(args)
 
 
 if __name__ == "__main__":

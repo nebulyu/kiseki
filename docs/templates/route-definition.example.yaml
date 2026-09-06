@@ -1,5 +1,8 @@
-# 文档样例，当前程序不加载。与 goal-definition.example.yaml 配套。
-# 未来个人配置存放在 private/routes/；以下仅为虚构示例。
+# 公开格式样例；程序不默认加载此文件。与 goal-definition.example.yaml 配套。
+# 用户可手动复制到 private/routes/*.yaml 并修改；勿覆盖已有个人配置，以下仅为虚构示例。
+# schema_version 是结构版本，当前支持 0.2.0；version 是正整数内容版本。
+# 所有字段必需，未知字段会报错；路线 ID 跨文件唯一，goal_id 必须对应个人目标 ID。
+# 状态为 exploring / active / paused / archived，所有状态均可通过 route list/show 查看。
 schema_version: "0.2.0"
 id: "agent-project-example"
 goal_id: "agent-capability-example"
@@ -19,6 +22,8 @@ focus_dimensions:
   - "information_gain"
   - "autonomy"
 
+# specific_signals 与 costs 的 ID 在本路线内合并检查唯一性。
+# 正向 daily_delta 必须为 1..5 的整数（不接受字符串或布尔值）。
 specific_signals:
   - id: "working-delivery"
     label: "完成可运行的相关交付"
@@ -33,12 +38,14 @@ specific_signals:
     match_when: "原文明确描述解决相关技术障碍，并说明原因或可复用的经验。"
     daily_delta: 2
 
+# 成本 daily_delta 必须为 -5..-1 的整数。
 costs:
   - id: "reported-overextension"
     label: "明确记录投入导致的透支"
     match_when: "用户在原文中明确把该路线的投入与休息受损或明显疲惫联系起来；不推断疾病或未描述的因果。"
     daily_delta: -2
 
+# 当前只支持以下四个固定值；route list/show 只展示规则，不计算影响或进度。
 calculation:
   formula_version: "route-evidence-0.1.0"
   method: "sum_unique_signals_clamped"

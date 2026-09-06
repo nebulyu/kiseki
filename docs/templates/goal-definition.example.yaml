@@ -1,5 +1,8 @@
-# 文档样例，当前程序不加载。以下为虚构目标，不代表用户真实计划。
-# 未来可作为 private/goals.yaml 的起点；个人配置不提交 Git。
+# 公开格式样例；程序不默认加载此文件。以下为虚构目标，不代表用户真实计划。
+# 用户可手动复制到 private/goals.yaml 并修改；勿覆盖已有个人配置，不提交 Git。
+# schema_version 是结构版本，当前支持 0.1.0；每个目标的 version 是正整数内容版本。
+# 所有字段必需，未知字段会报错；目标 ID 唯一，状态为 active / paused / completed。
+# target_date 使用带引号的合法 YYYY-MM-DD（如 "2026-12-31"）或 null。
 schema_version: "0.1.0"
 goals:
   - id: "agent-capability-example"

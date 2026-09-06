@@ -15,14 +15,14 @@ status:
   lifecycle: "active"
   phase: "phase-2-personal-trial"
   implementation: "working-cli-mvp"
-  current_milestone: "daily-review-and-manual-analysis-recovery"
-  next_milestone: "goal-route-config-loading"
+  current_milestone: "goal-route-config-loading-and-viewing"
+  next_milestone: "single-entry-route-analysis-and-storage"
   route_specification: "documented"
-  route_implementation: "not-started"
+  route_implementation: "configuration-viewing"
   parallel_workstreams:
     - "daily-use-and-scoring-calibration"
     - "long-term-route-mvp-development"
-  last_reviewed: "2026-09-06"
+  last_reviewed: "2026-09-07"
 
 product:
   audience:
@@ -39,6 +39,7 @@ architecture:
   package_manager: "uv"
   persistence: "SQLite"
   validation: "Pydantic"
+  route_configuration: "local-yaml-safe-load"
   model_integration: "direct-single-provider"
   review_logic: "pure-functions"
   future_ui: "undecided"
